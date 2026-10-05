@@ -127,6 +127,43 @@
             </div>
         </transition>
 
+        <!-- Custom Modal: Reference Links -->
+        <transition name="modal">
+            <div v-if="modalState.ref.show" class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 p-4">
+                <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all flex flex-col max-h-[90vh]">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-link text-blue-500"></i> แหล่งที่มา / ลิงก์อ้างอิงราคากลาง
+                    </h3>
+                    
+                    <div class="mb-3 bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-700">
+                        <i class="fas fa-tag text-slate-400 mr-1"></i> รายการ: {{ modalState.ref.targetItem?.name || '(ยังไม่ได้ระบุชื่อรายการ)' }}
+                    </div>
+
+                    <div class="overflow-y-auto pr-2 mb-4 flex-1 space-y-2">
+                        <div v-if="!modalState.ref.targetItem?.refs || modalState.ref.targetItem.refs.length === 0" class="text-center text-slate-400 py-6 text-sm border-2 border-dashed border-slate-100 rounded-lg">
+                            <i class="fas fa-info-circle mb-1 text-lg block"></i>
+                            ยังไม่มีข้อมูลอ้างอิง
+                        </div>
+                        <div v-for="(r, i) in modalState.ref.targetItem?.refs" :key="i" class="flex gap-2 items-center bg-white p-1">
+                            <span class="text-slate-400 text-xs font-bold w-4">{{ i+1 }}.</span>
+                            <input type="text" v-model="r.text" class="table-input flex-1 text-sm border-slate-300" placeholder="วางลิงก์ URL หรือ พิมพ์ที่มาราคา...">
+                            <a v-if="r.text && r.text.startsWith('http')" :href="r.text" target="_blank" class="text-blue-500 hover:text-blue-700 p-1" title="เปิดลิงก์"><i class="fas fa-external-link-alt"></i></a>
+                            <button @click="modalState.ref.targetItem.refs.splice(i, 1)" class="text-red-400 hover:text-red-600 p-1 transition" title="ลบข้อมูล"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="mt-auto">
+                        <button @click="addRefToTarget" class="w-full py-2.5 border border-dashed border-blue-400 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-medium transition text-sm mb-4">
+                            + เพิ่มแหล่งอ้างอิง
+                        </button>
+                        <div class="flex justify-end">
+                            <button @click="modalState.ref.show = false" class="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition font-bold">ตกลง / ปิดหน้าต่าง</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <!-- Header & Action Buttons -->
         <div data-html2canvas-ignore="true" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-6 flex flex-col xl:flex-row justify-between items-center gap-4">
             <div>
@@ -156,7 +193,7 @@
 
         <div id="print-area" class="space-y-6">
             
-            <!-- 1. หมวดคอนกรีต (Concrete) -->
+            <!-- 1. งานคอนกรีต -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="bg-gradient-to-r from-blue-700 to-blue-600 text-white p-3 flex justify-between items-center section-header">
                     <h3 class="font-bold text-lg"><i class="fas fa-cube mr-2"></i> 1. งานคอนกรีต (Concrete)</h3>
@@ -184,6 +221,7 @@
                                 <th class="p-2 w-24 bg-slate-50">รวมวัสดุ</th>
                                 <th class="p-2 w-24 bg-slate-50">รวมค่าแรง</th>
                                 <th class="p-2 w-28 bg-blue-50 font-bold">รวมสุทธิ</th>
+                                <th data-html2canvas-ignore="true" class="p-2 w-14">อ้างอิง</th>
                                 <th data-html2canvas-ignore="true" class="p-2 w-16">จัดการ</th>
                             </tr>
                         </thead>
@@ -223,6 +261,12 @@
                                 <td class="p-2 text-right text-slate-500 text-xs">{{ fNum(calcCost(item, calcVol(item), 'lab')) }}</td>
                                 <td class="p-2 text-right font-bold text-blue-800 bg-blue-50/50">{{ fNum(calcCost(item, calcVol(item), 'total')) }}</td>
                                 
+                                <td data-html2canvas-ignore="true" class="p-2 text-center">
+                                    <button @click="openRefModal(item)" class="text-slate-400 hover:text-blue-600 transition relative" title="แหล่งอ้างอิง">
+                                        <i class="fas fa-link"></i>
+                                        <span v-if="item.refs && item.refs.length" class="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-[9px] font-bold px-1 rounded-full min-w-[14px]">{{item.refs.length}}</span>
+                                    </button>
+                                </td>
                                 <td data-html2canvas-ignore="true" class="p-2 text-center whitespace-nowrap">
                                     <button @click="duplicateRow('concreteItems', index)" class="text-blue-500 hover:text-blue-700 transition mr-2" title="คัดลอกแถว"><i class="fas fa-copy"></i></button>
                                     <button @click="removeRow('concreteItems', index)" class="text-slate-400 hover:text-red-500 transition" title="ลบ"><i class="fas fa-trash-alt"></i></button>
@@ -233,7 +277,7 @@
                 </div>
             </div>
 
-            <!-- 2. หมวดไม้แบบ (Formwork) -->
+            <!-- 2. งานไม้แบบ -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="bg-gradient-to-r from-amber-600 to-amber-500 text-white p-3 flex justify-between items-center section-header">
                     <h3 class="font-bold text-lg"><i class="fas fa-border-all mr-2"></i> 2. งานไม้แบบหล่อคอนกรีต (Formwork)</h3>
@@ -261,6 +305,7 @@
                                 <th class="p-2 w-24 bg-slate-50">รวมวัสดุ</th>
                                 <th class="p-2 w-24 bg-slate-50">รวมค่าแรง</th>
                                 <th class="p-2 w-28 bg-amber-50 font-bold">รวมสุทธิ</th>
+                                <th data-html2canvas-ignore="true" class="p-2 w-14">อ้างอิง</th>
                                 <th data-html2canvas-ignore="true" class="p-2 w-16">จัดการ</th>
                             </tr>
                         </thead>
@@ -309,6 +354,12 @@
                                 <td class="p-2 text-right text-slate-500 text-xs">{{ fNum(calcCost(item, calcArea(item), 'lab')) }}</td>
                                 <td class="p-2 text-right font-bold text-amber-800 bg-amber-50/50">{{ fNum(calcCost(item, calcArea(item), 'total')) }}</td>
                                 
+                                <td data-html2canvas-ignore="true" class="p-2 text-center">
+                                    <button @click="openRefModal(item)" class="text-slate-400 hover:text-blue-600 transition relative" title="แหล่งอ้างอิง">
+                                        <i class="fas fa-link"></i>
+                                        <span v-if="item.refs && item.refs.length" class="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-[9px] font-bold px-1 rounded-full min-w-[14px]">{{item.refs.length}}</span>
+                                    </button>
+                                </td>
                                 <td data-html2canvas-ignore="true" class="p-2 text-center whitespace-nowrap">
                                     <button @click="duplicateRow('formworkItems', index)" class="text-blue-500 hover:text-blue-700 transition mr-2"><i class="fas fa-copy"></i></button>
                                     <button @click="removeRow('formworkItems', index)" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-trash-alt"></i></button>
@@ -319,7 +370,7 @@
                 </div>
             </div>
 
-            <!-- 3. หมวดเหล็กเสริม (Rebar) -->
+            <!-- 3. งานเหล็กเสริม -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="bg-gradient-to-r from-slate-700 to-slate-600 text-white p-3 flex justify-between items-center section-header">
                     <h3 class="font-bold text-lg"><i class="fas fa-layer-group mr-2"></i> 3. งานเหล็กเสริมคอนกรีต (Rebar)</h3>
@@ -348,6 +399,7 @@
                                 <th class="p-2 w-24 bg-slate-50">รวมวัสดุ</th>
                                 <th class="p-2 w-24 bg-slate-50">รวมค่าแรง</th>
                                 <th class="p-2 w-24 bg-slate-200 font-bold">รวมสุทธิ</th>
+                                <th data-html2canvas-ignore="true" class="p-2 w-14">อ้างอิง</th>
                                 <th data-html2canvas-ignore="true" class="p-2 w-16">จัดการ</th>
                             </tr>
                         </thead>
@@ -391,6 +443,12 @@
                                 <td class="p-2 text-right text-slate-500 text-xs">{{ fNum(calcCost(item, calcRebarWt(item), 'lab')) }}</td>
                                 <td class="p-2 text-right font-bold text-slate-800 bg-slate-200/50">{{ fNum(calcCost(item, calcRebarWt(item), 'total')) }}</td>
                                 
+                                <td data-html2canvas-ignore="true" class="p-2 text-center">
+                                    <button @click="openRefModal(item)" class="text-slate-400 hover:text-blue-600 transition relative" title="แหล่งอ้างอิง">
+                                        <i class="fas fa-link"></i>
+                                        <span v-if="item.refs && item.refs.length" class="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-[9px] font-bold px-1 rounded-full min-w-[14px]">{{item.refs.length}}</span>
+                                    </button>
+                                </td>
                                 <td data-html2canvas-ignore="true" class="p-2 text-center whitespace-nowrap">
                                     <button @click="duplicateRow('rebarItems', index)" class="text-blue-500 hover:text-blue-700 transition mr-2"><i class="fas fa-copy"></i></button>
                                     <button @click="removeRow('rebarItems', index)" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-trash-alt"></i></button>
@@ -401,7 +459,7 @@
                 </div>
             </div>
 
-            <!-- 4. หมวดเหล็กรูปพรรณ (Structural Steel) -->
+            <!-- 4. งานเหล็กรูปพรรณ -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="bg-gradient-to-r from-red-700 to-red-600 text-white p-3 flex justify-between items-center section-header">
                     <h3 class="font-bold text-lg"><i class="fas fa-industry mr-2"></i> 4. งานเหล็กรูปพรรณ (Structural Steel)</h3>
@@ -416,20 +474,22 @@
                                 <th data-html2canvas-ignore="true" class="p-2 w-8"></th>
                                 <th class="p-2 w-10">ที่</th>
                                 <th class="p-2 w-48 text-left">หน้าตัดเหล็ก</th>
-                                <th class="p-2 w-32">วิธีคำนวณ</th>
-                                <th class="p-2 w-24">ความยาว (ม.)</th>
-                                <th class="p-2 w-24">น้ำหนัก (กก./ม.)</th>
-                                <th class="p-2 w-16 bg-slate-200 text-slate-400">ค่า 3</th>
-                                <th class="p-2 w-16 bg-slate-200 text-slate-400">ค่า 4</th>
-                                <th class="p-2 w-16">จำนวน</th>
-                                <th class="p-2 w-14">เผื่อ(%)</th>
-                                <th class="p-2 w-24 bg-red-50">รวม(กก.)</th>
-                                <th class="p-2 w-20">วัสดุ/หน่วย</th>
-                                <th class="p-2 w-20">ค่าแรง/หน่วย</th>
-                                <th class="p-2 w-24 bg-slate-50">รวมวัสดุ</th>
-                                <th class="p-2 w-24 bg-slate-50">รวมค่าแรง</th>
-                                <th class="p-2 w-28 bg-red-50 font-bold">รวมสุทธิ</th>
-                                <th data-html2canvas-ignore="true" class="p-2 w-16">จัดการ</th>
+                                <th class="p-2 w-28">วิธีคำนวณ</th>
+                                <th class="p-2 w-16">ยาว/ท่อน<br><span class="text-[9px] text-slate-400 font-normal">(ม.)</span></th>
+                                <th class="p-2 w-16">น้ำหนัก<br><span class="text-[9px] text-slate-400 font-normal">(กก./ม.)</span></th>
+                                <th class="p-2 w-16">จำนวนท่อน<br><span class="text-[9px] text-slate-400 font-normal">หรือ ระยะ@(ม.)</span></th>
+                                <th class="p-2 w-16">ความยาวโครงฯ<br><span class="text-[9px] text-slate-400 font-normal">(ม.)</span></th>
+                                <th class="p-2 w-14">จำนวนชุด</th>
+                                <th class="p-2 w-12">เผื่อ(%)</th>
+                                <th class="p-2 w-24">วิธีคิดราคา</th>
+                                <th class="p-2 w-24 bg-red-50">ปริมาณรวม</th>
+                                <th class="p-2 w-16">วัสดุ/หน่วย</th>
+                                <th class="p-2 w-16">ค่าแรง/หน่วย</th>
+                                <th class="p-2 w-20 bg-slate-50">รวมวัสดุ</th>
+                                <th class="p-2 w-20 bg-slate-50">รวมค่าแรง</th>
+                                <th class="p-2 w-24 bg-red-50 font-bold">รวมสุทธิ</th>
+                                <th data-html2canvas-ignore="true" class="p-2 w-14">อ้างอิง</th>
+                                <th data-html2canvas-ignore="true" class="p-2 w-14">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody id="steel-list">
@@ -437,24 +497,56 @@
                                 <td data-html2canvas-ignore="true" class="p-2 text-center drag-handle"><i class="fas fa-grip-vertical"></i></td>
                                 <td class="p-2 text-center text-slate-500">{{ index + 1 }}</td>
                                 <td class="p-1"><input type="text" v-model="item.name" class="table-input" placeholder="เช่น H-Beam 200x200"></td>
-                                <td class="p-1"><input type="text" disabled value="ยาว × นน./ม." class="table-input text-center text-xs bg-slate-50"></td>
-                                <td class="p-1"><input type="number" v-model.number="item.p1" class="table-input text-center" placeholder="ม."></td>
-                                <td class="p-1"><input type="number" v-model.number="item.p2" class="table-input text-center" placeholder="กก./ม."></td>
-                                <td class="p-1"><input type="number" disabled class="table-input bg-slate-200 border-dashed"></td>
-                                <td class="p-1"><input type="number" disabled class="table-input bg-slate-200 border-dashed"></td>
+                                <td class="p-1">
+                                    <select v-model="item.calcType" class="table-input text-xs bg-slate-50" :class="item.calcType === 'spacing' ? 'text-purple-700' : ''">
+                                        <option value="manual">กรอกจำนวนท่อน</option>
+                                        <option value="spacing">คำนวณจากระยะ @</option>
+                                    </select>
+                                </td>
+                                <td class="p-1"><input type="number" v-model.number="item.p1" class="table-input text-center" placeholder="L"></td>
+                                <td class="p-1"><input type="number" v-model.number="item.p2" class="table-input text-center" placeholder="Wt"></td>
+                                <td class="p-1"><input type="number" v-model.number="item.p3" class="table-input text-center" :class="item.calcType === 'spacing' ? 'bg-purple-50' : ''" :placeholder="item.calcType === 'spacing' ? '@' : 'ท่อน'"></td>
+                                <td class="p-1"><input type="number" v-model.number="item.p4" class="table-input text-center" :class="item.calcType === 'spacing' ? 'bg-purple-50' : 'bg-slate-200 border-dashed'" placeholder="L โครงฯ" :disabled="item.calcType !== 'spacing'"></td>
                                 
                                 <td class="p-1"><input type="number" v-model.number="item.qty" class="table-input text-center font-medium text-red-700"></td>
                                 <td class="p-1"><input type="number" v-model.number="item.wastage" class="table-input text-center text-red-500"></td>
                                 
-                                <td class="p-2 text-center font-bold text-red-700 bg-red-50/50">{{ calcSteelWt(item) }}</td>
+                                <td class="p-1">
+                                    <select v-model="item.priceUnit" class="table-input text-xs bg-slate-50 font-bold text-red-700 border-red-200">
+                                        <option value="kg">ต่อ กก.</option>
+                                        <option value="piece">ต่อท่อนขาย</option>
+                                    </select>
+                                    <div v-if="item.priceUnit === 'piece'" class="mt-1 flex items-center gap-1 justify-center">
+                                        <span class="text-[9px] text-slate-500 whitespace-nowrap">ยาวขาย:</span>
+                                        <input type="number" v-model.number="item.stdLength" class="table-input text-[10px] text-center px-1 py-0.5 h-5 w-10 border-red-300" placeholder="6" title="ความยาวมาตรฐานที่มีขาย (เมตร)">
+                                    </div>
+                                </td>
+                                
+                                <td class="p-2 text-center font-bold text-red-700 bg-red-50/50 flex flex-col justify-center h-full min-h-[44px]">
+                                    <span v-if="item.priceUnit === 'piece'">
+                                        {{ calcSteelPieces(item) }} <span class="text-[10px] font-normal text-slate-500">ท่อน</span>
+                                    </span>
+                                    <span v-else>
+                                        {{ calcSteelWt(item) }} <span class="text-[10px] font-normal text-slate-500">กก.</span>
+                                    </span>
+                                    
+                                    <span v-if="item.priceUnit === 'piece'" class="text-[9px] font-normal text-slate-500 leading-tight mt-0.5">(นน. {{ calcSteelWt(item) }} กก.)</span>
+                                    <span v-else-if="item.calcType === 'spacing'" class="text-[9px] font-normal text-slate-500 leading-tight mt-0.5">({{getSteelPcs(item)}} ท่อน/ชุด)</span>
+                                </td>
                                 
                                 <td class="p-1"><input type="number" v-model.number="item.matPrice" class="table-input text-right text-emerald-700"></td>
                                 <td class="p-1"><input type="number" v-model.number="item.labPrice" class="table-input text-right text-orange-600"></td>
                                 
-                                <td class="p-2 text-right text-slate-500 text-xs">{{ fNum(calcCost(item, calcSteelWt(item), 'mat')) }}</td>
-                                <td class="p-2 text-right text-slate-500 text-xs">{{ fNum(calcCost(item, calcSteelWt(item), 'lab')) }}</td>
-                                <td class="p-2 text-right font-bold text-red-800 bg-red-50/50">{{ fNum(calcCost(item, calcSteelWt(item), 'total')) }}</td>
+                                <td class="p-2 text-right text-slate-500 text-xs">{{ fNum(calcCost(item, item.priceUnit === 'piece' ? calcSteelPieces(item) : calcSteelWt(item), 'mat')) }}</td>
+                                <td class="p-2 text-right text-slate-500 text-xs">{{ fNum(calcCost(item, item.priceUnit === 'piece' ? calcSteelPieces(item) : calcSteelWt(item), 'lab')) }}</td>
+                                <td class="p-2 text-right font-bold text-red-800 bg-red-50/50">{{ fNum(calcCost(item, item.priceUnit === 'piece' ? calcSteelPieces(item) : calcSteelWt(item), 'total')) }}</td>
                                 
+                                <td data-html2canvas-ignore="true" class="p-2 text-center">
+                                    <button @click="openRefModal(item)" class="text-slate-400 hover:text-blue-600 transition relative" title="แหล่งอ้างอิง">
+                                        <i class="fas fa-link"></i>
+                                        <span v-if="item.refs && item.refs.length" class="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-[9px] font-bold px-1 rounded-full min-w-[14px]">{{item.refs.length}}</span>
+                                    </button>
+                                </td>
                                 <td data-html2canvas-ignore="true" class="p-2 text-center whitespace-nowrap">
                                     <button @click="duplicateRow('steelItems', index)" class="text-blue-500 hover:text-blue-700 transition mr-2"><i class="fas fa-copy"></i></button>
                                     <button @click="removeRow('steelItems', index)" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-trash-alt"></i></button>
@@ -465,7 +557,7 @@
                 </div>
             </div>
 
-            <!-- 5. หมวดงานดิน / วัสดุถม / งานอื่นๆ -->
+            <!-- 5. งานดิน / วัสดุถม / งานอื่นๆ -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white p-3 flex justify-between items-center section-header">
                     <h3 class="font-bold text-lg"><i class="fas fa-truck-moving mr-2"></i> 5. งานดิน / วัสดุถม / งานอื่นๆ (Earthworks & Others)</h3>
@@ -493,6 +585,7 @@
                                 <th class="p-2 w-24 bg-slate-50">รวมวัสดุ</th>
                                 <th class="p-2 w-24 bg-slate-50">รวมค่าแรง</th>
                                 <th class="p-2 w-28 bg-emerald-50 font-bold">รวมสุทธิ</th>
+                                <th data-html2canvas-ignore="true" class="p-2 w-14">อ้างอิง</th>
                                 <th data-html2canvas-ignore="true" class="p-2 w-16">จัดการ</th>
                             </tr>
                         </thead>
@@ -525,6 +618,12 @@
                                 <td class="p-2 text-right text-slate-500 text-xs">{{ fNum(calcCost(item, calcOthQty(item), 'lab')) }}</td>
                                 <td class="p-2 text-right font-bold text-emerald-800 bg-emerald-50/50">{{ fNum(calcCost(item, calcOthQty(item), 'total')) }}</td>
                                 
+                                <td data-html2canvas-ignore="true" class="p-2 text-center">
+                                    <button @click="openRefModal(item)" class="text-slate-400 hover:text-blue-600 transition relative" title="แหล่งอ้างอิง">
+                                        <i class="fas fa-link"></i>
+                                        <span v-if="item.refs && item.refs.length" class="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-[9px] font-bold px-1 rounded-full min-w-[14px]">{{item.refs.length}}</span>
+                                    </button>
+                                </td>
                                 <td data-html2canvas-ignore="true" class="p-2 text-center whitespace-nowrap">
                                     <button @click="duplicateRow('otherItems', index)" class="text-blue-500 hover:text-blue-700 transition mr-2"><i class="fas fa-copy"></i></button>
                                     <button @click="removeRow('otherItems', index)" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-trash-alt"></i></button>
@@ -535,8 +634,8 @@
                 </div>
             </div>
 
-            <!-- 6. หมวดงานค่าใช้จ่ายพิเศษ (Special Expenses) -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+            <!-- 6. งานค่าใช้จ่ายพิเศษ -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="bg-gradient-to-r from-purple-700 to-purple-600 text-white p-3 flex justify-between items-center section-header">
                     <h3 class="font-bold text-lg"><i class="fas fa-wallet mr-2"></i> 6. งานค่าใช้จ่ายพิเศษ (Special Expenses)</h3>
                     <button data-html2canvas-ignore="true" @click="addRow('special')" class="bg-white text-purple-700 px-3 py-1 rounded text-xs font-bold hover:bg-purple-50 shadow-sm transition">
@@ -557,6 +656,7 @@
                                 <th class="p-2 w-32 bg-slate-50">รวมวัสดุ/เหมา</th>
                                 <th class="p-2 w-32 bg-slate-50">รวมค่าแรง</th>
                                 <th class="p-2 w-40 bg-purple-50 font-bold">รวมสุทธิ</th>
+                                <th data-html2canvas-ignore="true" class="p-2 w-14">อ้างอิง</th>
                                 <th data-html2canvas-ignore="true" class="p-2 w-16">จัดการ</th>
                             </tr>
                         </thead>
@@ -575,11 +675,113 @@
                                 <td class="p-2 text-right text-slate-500">{{ fNum((Number(item.qty)||0) * (Number(item.labPrice)||0)) }}</td>
                                 <td class="p-2 text-right font-bold text-purple-800 bg-purple-50/50">{{ fNum(calcSpecialCost(item)) }}</td>
                                 
+                                <td data-html2canvas-ignore="true" class="p-2 text-center">
+                                    <button @click="openRefModal(item)" class="text-slate-400 hover:text-blue-600 transition relative" title="แหล่งอ้างอิง">
+                                        <i class="fas fa-link"></i>
+                                        <span v-if="item.refs && item.refs.length" class="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-[9px] font-bold px-1 rounded-full min-w-[14px]">{{item.refs.length}}</span>
+                                    </button>
+                                </td>
                                 <td data-html2canvas-ignore="true" class="p-2 text-center whitespace-nowrap">
                                     <button @click="duplicateRow('specialItems', index)" class="text-blue-500 hover:text-blue-700 transition mr-2"><i class="fas fa-copy"></i></button>
                                     <button @click="removeRow('specialItems', index)" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-trash-alt"></i></button>
                                 </td>
                             </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 7. งานชุดประกอบ -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+                <div class="bg-gradient-to-r from-pink-700 to-pink-600 text-white p-3 flex justify-between items-center section-header">
+                    <h3 class="font-bold text-lg"><i class="fas fa-box-open mr-2"></i> 7. งานชุดประกอบ (Assembly Sets)</h3>
+                    <button data-html2canvas-ignore="true" @click="addAssemblySet" class="bg-white text-pink-700 px-3 py-1 rounded text-xs font-bold hover:bg-pink-50 shadow-sm transition">
+                        + เพิ่มชุดงานใหม่
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 text-[11px] uppercase tracking-wider text-center border-b border-slate-200">
+                                <th data-html2canvas-ignore="true" class="p-2 w-8"></th>
+                                <th class="p-2 w-10">ที่</th>
+                                <th class="p-2 text-left">ชื่อชุด / ไอเทมย่อย</th>
+                                <th class="p-2 w-24">หน่วย</th>
+                                <th class="p-2 w-28">ปริมาณ/ชุด</th>
+                                <th class="p-2 w-28 text-pink-700">จำนวนชุดรวม</th>
+                                <th class="p-2 w-28">วัสดุ/หน่วย</th>
+                                <th class="p-2 w-28">ค่าแรง/หน่วย</th>
+                                <th class="p-2 w-32 bg-slate-50">รวมวัสดุ</th>
+                                <th class="p-2 w-32 bg-slate-50">รวมค่าแรง</th>
+                                <th class="p-2 w-40 bg-pink-50 font-bold">รวมสุทธิ</th>
+                                <th data-html2canvas-ignore="true" class="p-2 w-14">อ้างอิง</th>
+                                <th data-html2canvas-ignore="true" class="p-2 w-20">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assembly-list">
+                            <template v-for="(set, sIdx) in assemblyItems" :key="set.id">
+                                <!-- Main Set Row -->
+                                <tr class="border-b border-slate-200 bg-slate-50 hover:bg-slate-100 transition">
+                                    <td data-html2canvas-ignore="true" class="p-2 text-center drag-handle"><i class="fas fa-grip-vertical"></i></td>
+                                    <td class="p-2 text-center font-bold text-slate-600">{{ sIdx + 1 }}</td>
+                                    <td class="p-2">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-cubes text-pink-500"></i>
+                                            <input type="text" v-model="set.name" class="table-input font-bold text-slate-700" placeholder="ชื่อชุดงาน เช่น ชุด Base Plate">
+                                        </div>
+                                    </td>
+                                    <td class="p-2 text-center text-slate-500 text-xs">ชุด</td>
+                                    <td class="p-2 bg-slate-100"></td>
+                                    <td class="p-2"><input type="number" v-model.number="set.setQty" class="table-input text-center font-bold text-pink-700 bg-pink-50"></td>
+                                    <td class="p-2 bg-slate-100"></td>
+                                    <td class="p-2 bg-slate-100"></td>
+                                    <td class="p-2 text-right font-medium text-slate-600 bg-slate-100/50">{{ fNum(calcAssemblyMatTotal(set)) }}</td>
+                                    <td class="p-2 text-right font-medium text-slate-600 bg-slate-100/50">{{ fNum(calcAssemblyLabTotal(set)) }}</td>
+                                    <td class="p-2 text-right font-bold text-pink-700 bg-pink-100/50 text-lg">{{ fNum(calcAssemblyMatTotal(set) + calcAssemblyLabTotal(set)) }}</td>
+                                    <td data-html2canvas-ignore="true" class="p-2 text-center">
+                                        <button @click="openRefModal(set)" class="text-slate-400 hover:text-pink-600 transition relative" title="แหล่งอ้างอิง">
+                                            <i class="fas fa-link"></i>
+                                            <span v-if="set.refs && set.refs.length" class="absolute -top-2 -right-2 bg-pink-100 text-pink-700 text-[9px] font-bold px-1 rounded-full min-w-[14px]">{{set.refs.length}}</span>
+                                        </button>
+                                    </td>
+                                    <td data-html2canvas-ignore="true" class="p-2 text-center whitespace-nowrap">
+                                        <button @click="addSubItem(set)" class="text-emerald-500 hover:text-emerald-700 transition mr-2 text-xs font-bold" title="เพิ่มไอเทมย่อย"><i class="fas fa-plus"></i></button>
+                                        <button @click="duplicateAssemblySet(sIdx)" class="text-blue-500 hover:text-blue-700 transition mr-2" title="คัดลอกชุด"><i class="fas fa-copy"></i></button>
+                                        <button @click="removeAssemblySet(sIdx)" class="text-slate-400 hover:text-red-500 transition" title="ลบชุด"><i class="fas fa-trash-alt"></i></button>
+                                    </td>
+                                </tr>
+                                <!-- Sub Items Rows -->
+                                <tr v-for="(sub, subIdx) in set.subItems" :key="sub.id" class="border-b border-slate-100 bg-white hover:bg-slate-50/50">
+                                    <td data-html2canvas-ignore="true" class="p-2"></td>
+                                    <td class="p-2 text-center text-slate-400 text-xs">{{ sIdx + 1 }}.{{ subIdx + 1 }}</td>
+                                    <td class="p-1 pl-8">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-level-up-alt fa-rotate-90 text-slate-300"></i>
+                                            <input type="text" v-model="sub.name" class="table-input text-sm" placeholder="ไอเทมย่อย">
+                                        </div>
+                                    </td>
+                                    <td class="p-1"><input type="text" v-model="sub.unit" class="table-input text-center text-xs" placeholder="หน่วย"></td>
+                                    <td class="p-1"><input type="number" v-model.number="sub.qtyPerSet" class="table-input text-center text-slate-600"></td>
+                                    <td class="p-2 text-center text-slate-400 text-xs">x {{ Number(set.setQty)||0 }} ชุด</td>
+                                    <td class="p-1"><input type="number" v-model.number="sub.matPrice" class="table-input text-right text-emerald-700"></td>
+                                    <td class="p-1"><input type="number" v-model.number="sub.labPrice" class="table-input text-right text-orange-600"></td>
+                                    
+                                    <td class="p-2 text-right text-slate-500 text-xs">{{ fNum((Number(set.setQty)||0) * (Number(sub.qtyPerSet)||0) * (Number(sub.matPrice)||0)) }}</td>
+                                    <td class="p-2 text-right text-slate-500 text-xs">{{ fNum((Number(set.setQty)||0) * (Number(sub.qtyPerSet)||0) * (Number(sub.labPrice)||0)) }}</td>
+                                    <td class="p-2 text-right font-medium text-slate-700 bg-pink-50/30">
+                                        {{ fNum((Number(set.setQty)||0) * (Number(sub.qtyPerSet)||0) * ((Number(sub.matPrice)||0) + (Number(sub.labPrice)||0))) }}
+                                    </td>
+                                    <td data-html2canvas-ignore="true" class="p-2 text-center">
+                                        <button @click="openRefModal(sub)" class="text-slate-400 hover:text-blue-600 transition relative" title="แหล่งอ้างอิง">
+                                            <i class="fas fa-link"></i>
+                                            <span v-if="sub.refs && sub.refs.length" class="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-[9px] font-bold px-1 rounded-full min-w-[14px]">{{sub.refs.length}}</span>
+                                        </button>
+                                    </td>
+                                    <td data-html2canvas-ignore="true" class="p-2 text-center whitespace-nowrap">
+                                        <button @click="removeSubItem(set, subIdx)" class="text-slate-300 hover:text-red-400 transition" title="ลบไอเทมย่อย"><i class="fas fa-times"></i></button>
+                                    </td>
+                                </tr>
+                            </template>
                         </tbody>
                     </table>
                 </div>
@@ -631,30 +833,40 @@
                     
                     modalState: {
                         concrete: { show: false, val: '', targetItem: null },
-                        rebar: { show: false, name: '', weight: null, targetItem: null }
+                        rebar: { show: false, name: '', weight: null, targetItem: null },
+                        ref: { show: false, targetItem: null }
                     },
 
                     concreteItems: [
-                        { id: 101, name: 'เสา C1', spec: '240 ksc', calcType: 'w_l_h', p1: 0.2, p2: 0.2, p3: 3.0, qty: 12, wastage: 5, matPrice: 2100, labPrice: 450 },
-                        { id: 102, name: 'คาน B1', spec: '240 ksc', calcType: 'w_l_h', p1: 0.2, p2: 4.0, p3: 0.4, qty: 6, wastage: 5, matPrice: 2100, labPrice: 450 }
+                        { id: 101, name: 'เสา C1', spec: '240 ksc', calcType: 'w_l_h', p1: 0.2, p2: 0.2, p3: 3.0, qty: 12, wastage: 5, matPrice: 2100, labPrice: 450, refs: [] },
+                        { id: 102, name: 'คาน B1', spec: '240 ksc', calcType: 'w_l_h', p1: 0.2, p2: 4.0, p3: 0.4, qty: 6, wastage: 5, matPrice: 2100, labPrice: 450, refs: [] }
                     ],
                     formworkItems: [
-                        { id: 201, name: 'ไม้แบบเสา C1', spec: 'เหล็ก', calcType: 'link_col', linkedId: 101, p1: null, p2: null, qty: 12, wastage: 10, matPrice: 350, labPrice: 150 }
+                        { id: 201, name: 'ไม้แบบเสา C1', spec: 'เหล็ก', calcType: 'link_col', linkedId: 101, p1: null, p2: null, qty: 12, wastage: 10, matPrice: 350, labPrice: 150, refs: [] }
                     ],
                     rebarItems: [
-                        { id: 301, name: 'เหล็กแกนเสา C1', size: 'DB12', calcType: 'manual', p1: 4.0, p2: 4, p3: null, p4: null, qty: 12, wastage: 10, matPrice: 25, labPrice: 4 },
-                        { id: 302, name: 'เหล็กปลอกเสา C1', size: 'RB6', calcType: 'spacing', p1: 0.8, p2: 0.15, p3: 3.0, p4: 0.05, qty: 12, wastage: 10, matPrice: 26, labPrice: 5 }
+                        { id: 301, name: 'เหล็กแกนเสา C1', size: 'DB12', calcType: 'manual', p1: 4.0, p2: 4, p3: null, p4: null, qty: 12, wastage: 10, matPrice: 25, labPrice: 4, refs: [] },
+                        { id: 302, name: 'เหล็กปลอกเสา C1', size: 'RB6', calcType: 'spacing', p1: 0.8, p2: 0.15, p3: 3.0, p4: 0.05, qty: 12, wastage: 10, matPrice: 26, labPrice: 5, refs: [] }
                     ],
                     steelItems: [
-                        { id: 401, name: 'H-Beam 200x200', spec: '', p1: 6, p2: 49.9, qty: 2, wastage: 5, matPrice: 35, labPrice: 10 }
+                        { id: 401, name: 'แปหลังคา C-100', calcType: 'spacing', p1: 6.0, p2: 3.1, p3: 1.0, p4: 10.0, qty: 2, wastage: 5, priceUnit: 'kg', stdLength: 6, matPrice: 35, labPrice: 10, refs: [] },
+                        { id: 402, name: 'H-Beam 200x200', calcType: 'manual', p1: 6.0, p2: 49.9, p3: 2, p4: null, qty: 1, wastage: 5, priceUnit: 'piece', stdLength: 6, matPrice: 5000, labPrice: 500, refs: [] }
                     ],
                     otherItems: [
-                        { id: 501, name: 'ทรายหยาบรองพื้น', spec: 'ลบ.ม.', calcType: 'w_l_h', p1: 1.5, p2: 1.5, p3: 0.1, qty: 10, wastage: 15, matPrice: 450, labPrice: 150 },
-                        { id: 502, name: 'แผ่นพื้นสำเร็จรูป', spec: 'ตร.ม.', calcType: 'w_l', p1: 4.0, p2: 4.0, p3: null, qty: 1, wastage: 5, matPrice: 320, labPrice: 80 }
+                        { id: 501, name: 'ทรายหยาบรองพื้น', spec: 'ลบ.ม.', calcType: 'w_l_h', p1: 1.5, p2: 1.5, p3: 0.1, qty: 10, wastage: 15, matPrice: 450, labPrice: 150, refs: [] }
                     ],
                     specialItems: [
-                        { id: 601, name: 'ค่าเจาะสำรวจดิน (Boring Test)', unit: 'หลุม', qty: 2, matPrice: 12000, labPrice: 0 },
-                        { id: 602, name: 'ค่าความปลอดภัยและสิ่งแวดล้อม', unit: 'เหมา', qty: 1, matPrice: 15000, labPrice: 0 }
+                        { id: 601, name: 'ค่าเจาะสำรวจดิน (Boring Test)', unit: 'หลุม', qty: 2, matPrice: 12000, labPrice: 0, refs: [] }
+                    ],
+                    assemblyItems: [
+                        {
+                            id: 701, name: 'ชุด Plate ฐานเสา', setQty: 12, refs: [],
+                            subItems: [
+                                { id: 7011, name: 'Plate 200x200x9mm', qtyPerSet: 1, unit: 'แผ่น', matPrice: 250, labPrice: 50, refs: [] },
+                                { id: 7012, name: 'J-Bolt M16', qtyPerSet: 4, unit: 'ตัว', matPrice: 45, labPrice: 10, refs: [] },
+                                { id: 7013, name: 'ปูน Non-Shrink', qtyPerSet: 0.2, unit: 'ถุง', matPrice: 200, labPrice: 50, refs: [] }
+                            ]
+                        }
                     ]
                 }
             },
@@ -668,9 +880,13 @@
                     this.concreteItems.forEach(i => s += this.calcCost(i, this.calcVol(i), 'mat'));
                     this.formworkItems.forEach(i => s += this.calcCost(i, this.calcArea(i), 'mat'));
                     this.rebarItems.forEach(i => s += this.calcCost(i, this.calcRebarWt(i), 'mat'));
-                    this.steelItems.forEach(i => s += this.calcCost(i, this.calcSteelWt(i), 'mat'));
+                    this.steelItems.forEach(i => {
+                        let qty = i.priceUnit === 'piece' ? this.calcSteelPieces(i) : this.calcSteelWt(i);
+                        s += this.calcCost(i, qty, 'mat');
+                    });
                     this.otherItems.forEach(i => s += this.calcCost(i, this.calcOthQty(i), 'mat'));
                     this.specialItems.forEach(i => s += (Number(i.qty)||0) * (Number(i.matPrice)||0));
+                    this.assemblyItems.forEach(set => s += this.calcAssemblyMatTotal(set));
                     return s;
                 },
                 totalLab() {
@@ -678,9 +894,13 @@
                     this.concreteItems.forEach(i => s += this.calcCost(i, this.calcVol(i), 'lab'));
                     this.formworkItems.forEach(i => s += this.calcCost(i, this.calcArea(i), 'lab'));
                     this.rebarItems.forEach(i => s += this.calcCost(i, this.calcRebarWt(i), 'lab'));
-                    this.steelItems.forEach(i => s += this.calcCost(i, this.calcSteelWt(i), 'lab'));
+                    this.steelItems.forEach(i => {
+                        let qty = i.priceUnit === 'piece' ? this.calcSteelPieces(i) : this.calcSteelWt(i);
+                        s += this.calcCost(i, qty, 'lab');
+                    });
                     this.otherItems.forEach(i => s += this.calcCost(i, this.calcOthQty(i), 'lab'));
                     this.specialItems.forEach(i => s += (Number(i.qty)||0) * (Number(i.labPrice)||0));
+                    this.assemblyItems.forEach(set => s += this.calcAssemblyLabTotal(set));
                     return s;
                 },
                 grandTotal() { return this.totalMat + this.totalLab; }
@@ -697,7 +917,11 @@
                 getGenId() { return ++this.nextId; },
                 
                 initSort() {
-                    const t = [ { id:'concrete-list', a:'concreteItems' }, { id:'formwork-list', a:'formworkItems' }, { id:'rebar-list', a:'rebarItems' }, { id:'steel-list', a:'steelItems' }, { id:'other-list', a:'otherItems' }, { id:'special-list', a:'specialItems' } ];
+                    const t = [ 
+                        { id:'concrete-list', a:'concreteItems' }, { id:'formwork-list', a:'formworkItems' }, 
+                        { id:'rebar-list', a:'rebarItems' }, { id:'steel-list', a:'steelItems' }, 
+                        { id:'other-list', a:'otherItems' }, { id:'special-list', a:'specialItems' }
+                    ];
                     t.forEach(o => {
                         const el = document.getElementById(o.id);
                         if(el) Sortable.create(el, { handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost', onEnd: (e) => { const it = this[o.a].splice(e.oldIndex, 1)[0]; this[o.a].splice(e.newIndex, 0, it); } });
@@ -737,15 +961,25 @@
                     }
                     this.modalState.rebar.show = false;
                 },
+                
+                openRefModal(item) {
+                    if(!item.refs) item.refs = [];
+                    this.modalState.ref.targetItem = item;
+                    this.modalState.ref.show = true;
+                },
+                addRefToTarget() {
+                    if(!this.modalState.ref.targetItem.refs) this.modalState.ref.targetItem.refs = [];
+                    this.modalState.ref.targetItem.refs.push({ text: '' });
+                },
 
                 addRow(cat) {
                     const id = this.getGenId();
-                    if(cat==='concrete') this.concreteItems.push({ id, name:'', spec:'240 ksc', calcType:'w_l_h', p1:null, p2:null, p3:null, qty:1, wastage:5, matPrice:0, labPrice:0 });
-                    if(cat==='formwork') this.formworkItems.push({ id, name:'', spec:'', calcType:'w_l', linkedId:null, p1:null, p2:null, qty:1, wastage:10, matPrice:0, labPrice:0 });
-                    if(cat==='rebar') this.rebarItems.push({ id, name:'', size:'DB12', calcType:'manual', p1:null, p2:null, p3:null, p4:null, qty:1, wastage:10, matPrice:0, labPrice:0 });
-                    if(cat==='steel') this.steelItems.push({ id, name:'', spec:'', p1:null, p2:null, qty:1, wastage:5, matPrice:0, labPrice:0 });
-                    if(cat==='other') this.otherItems.push({ id, name:'', spec:'', calcType:'direct', p1:null, p2:null, p3:null, qty:1, wastage:0, matPrice:0, labPrice:0 });
-                    if(cat==='special') this.specialItems.push({ id, name:'', unit:'เหมา', qty:1, matPrice:0, labPrice:0 });
+                    if(cat==='concrete') this.concreteItems.push({ id, name:'', spec:'240 ksc', calcType:'w_l_h', p1:null, p2:null, p3:null, qty:1, wastage:5, matPrice:0, labPrice:0, refs:[] });
+                    if(cat==='formwork') this.formworkItems.push({ id, name:'', spec:'', calcType:'w_l', linkedId:null, p1:null, p2:null, qty:1, wastage:10, matPrice:0, labPrice:0, refs:[] });
+                    if(cat==='rebar') this.rebarItems.push({ id, name:'', size:'DB12', calcType:'manual', p1:null, p2:null, p3:null, p4:null, qty:1, wastage:10, matPrice:0, labPrice:0, refs:[] });
+                    if(cat==='steel') this.steelItems.push({ id, name:'', calcType:'manual', p1:null, p2:null, p3:null, p4:null, qty:1, wastage:5, priceUnit: 'kg', stdLength: 6, matPrice:0, labPrice:0, refs:[] });
+                    if(cat==='other') this.otherItems.push({ id, name:'', spec:'', calcType:'direct', p1:null, p2:null, p3:null, qty:1, wastage:0, matPrice:0, labPrice:0, refs:[] });
+                    if(cat==='special') this.specialItems.push({ id, name:'', unit:'เหมา', qty:1, matPrice:0, labPrice:0, refs:[] });
                 },
                 removeRow(arr, idx) { this[arr].splice(idx, 1); },
                 duplicateRow(arrKey, index) {
@@ -754,6 +988,35 @@
                     clonedItem.id = this.getGenId();
                     arr.splice(index + 1, 0, clonedItem);
                     this.notify("คัดลอกแถวสำเร็จ");
+                },
+
+                // Assembly Set Methods
+                addAssemblySet() {
+                    this.assemblyItems.push({
+                        id: this.getGenId(), name: '', setQty: 1, refs: [], subItems: [ { id: this.getGenId(), name: '', qtyPerSet: 1, unit: '', matPrice: 0, labPrice: 0, refs: [] } ]
+                    });
+                },
+                removeAssemblySet(index) { this.assemblyItems.splice(index, 1); },
+                duplicateAssemblySet(index) {
+                    const cloned = JSON.parse(JSON.stringify(this.assemblyItems[index]));
+                    cloned.id = this.getGenId();
+                    cloned.subItems.forEach(s => s.id = this.getGenId());
+                    this.assemblyItems.splice(index + 1, 0, cloned);
+                    this.notify("คัดลอกชุดงานสำเร็จ");
+                },
+                addSubItem(set) {
+                    set.subItems.push({ id: this.getGenId(), name: '', qtyPerSet: 1, unit: '', matPrice: 0, labPrice: 0, refs: [] });
+                },
+                removeSubItem(set, subIdx) { set.subItems.splice(subIdx, 1); },
+                calcAssemblyMatTotal(set) {
+                    let t = 0; const q = Number(set.setQty)||0;
+                    set.subItems.forEach(s => t += q * (Number(s.qtyPerSet)||0) * (Number(s.matPrice)||0));
+                    return t;
+                },
+                calcAssemblyLabTotal(set) {
+                    let t = 0; const q = Number(set.setQty)||0;
+                    set.subItems.forEach(s => t += q * (Number(s.qtyPerSet)||0) * (Number(s.labPrice)||0));
+                    return t;
                 },
 
                 getPH(cat, type, p) {
@@ -810,13 +1073,51 @@
                 calcRebarWt(i, forExcel = false) {
                     const w=(Number(i.wastage)||0)/100, q=(Number(i.qty)||0), wt=(this.rebarWeights[i.size]||0);
                     const pcs = this.getRbPcs(i);
-                    if(forExcel) return `=(${i.p1||0}*${pcs}*${q}*${wt})*(1+${w})`;
+                    if(forExcel) {
+                        let pcsFormula = (i.calcType === 'manual') ? `${i.p2||0}` : `(ROUNDUP(MAX(0,${i.p3||0}-2*${i.p4||0})/${i.p2||1},0)+1)`;
+                        return `=(${i.p1||0}*${pcsFormula}*${q}*${wt})*(1+${w})`;
+                    }
                     return ((Number(i.p1)||0) * pcs * q * wt * (1 + w)).toFixed(2);
+                },
+                getSteelPcs(i) {
+                    if (i.calcType !== 'spacing') return Number(i.p3) || 1; 
+                    const space = Number(i.p3)||0, stLen = Number(i.p4)||0;
+                    if (space <= 0) return 0;
+                    return Math.ceil(stLen / space) + 1;
                 },
                 calcSteelWt(i, forExcel = false) { 
                     const w=(Number(i.wastage)||0)/100, q=(Number(i.qty)||0);
-                    if(forExcel) return `=(${i.p1||0}*${i.p2||0}*${q})*(1+${w})`;
-                    return ((Number(i.p1)||0) * (Number(i.p2)||0) * q * (1 + w)).toFixed(2); 
+                    const l = Number(i.p1)||0, wt = Number(i.p2)||0;
+                    const pcs = this.getSteelPcs(i);
+                    
+                    if(forExcel) {
+                        let pcsFormula = (i.calcType !== 'spacing') ? `${i.p3||1}` : `(ROUNDUP(${i.p4||0}/${i.p3||1},0)+1)`;
+                        return `=(${l}*${wt}*${pcsFormula}*${q})*(1+${w})`;
+                    }
+                    return (l * wt * pcs * q * (1 + w)).toFixed(2); 
+                },
+                calcSteelPieces(i, forExcel = false) {
+                    const w=(Number(i.wastage)||0)/100, q=(Number(i.qty)||0);
+                    const l=Number(i.p1);
+                    const stdL=(Number(i.stdLength)||6);
+                    const pcs = this.getSteelPcs(i);
+                    
+                    if(forExcel) {
+                        let pcsFormula = (i.calcType !== 'spacing') ? `${i.p3||1}` : `(ROUNDUP(${i.p4||0}/${i.p3||1},0)+1)`;
+                        if (!l) {
+                            return `=ROUNDUP((${pcsFormula}*${q})*(1+${w}), 0)`;
+                        } else {
+                            let totalL = `(${l}*${pcsFormula}*${q})*(1+${w})`;
+                            return `=ROUNDUP(${totalL}/${stdL}, 0)`;
+                        }
+                    }
+                    
+                    if (!l) {
+                        return Math.ceil(pcs * q * (1 + w));
+                    } else {
+                        const totalL = l * pcs * q * (1 + w);
+                        return Math.ceil(totalL / stdL);
+                    }
                 },
                 calcOthQty(i, forExcel = false) { 
                     const w=(Number(i.wastage)||0)/100, q=(Number(i.qty)||0);
@@ -845,7 +1146,7 @@
                     const data = { 
                         conc: this.concreteItems, form: this.formworkItems, reb: this.rebarItems, 
                         stl: this.steelItems, oth: this.otherItems, spc: this.specialItems,
-                        customSpecs: this.concreteSpecs, customWeights: this.rebarWeights, v: '6.0' 
+                        asm: this.assemblyItems, customSpecs: this.concreteSpecs, customWeights: this.rebarWeights, v: '10.0' 
                     };
                     saveAs(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), "BOQ_Project.boq");
                     this.notify("บันทึกไฟล์สำเร็จ");
@@ -861,11 +1162,29 @@
                             if(p.conc) this.concreteItems = p.conc;
                             if(p.form) this.formworkItems = p.form;
                             if(p.reb) this.rebarItems = p.reb;
-                            if(p.stl) this.steelItems = p.stl;
+                            if(p.stl) {
+                                this.steelItems = p.stl.map(item => {
+                                    if(!item.calcType) { item.calcType = 'manual'; item.p3 = 1; }
+                                    if(!item.priceUnit) { item.priceUnit = 'kg'; }
+                                    if(item.stdLength === undefined) { item.stdLength = 6; }
+                                    return item;
+                                });
+                            }
                             if(p.oth) this.otherItems = p.oth;
                             if(p.spc) this.specialItems = p.spc;
+                            if(p.asm) this.assemblyItems = p.asm;
                             if(p.customSpecs) this.concreteSpecs = p.customSpecs;
                             if(p.customWeights) this.rebarWeights = p.customWeights;
+                            
+                            // Initialize refs if missing from old saves
+                            [this.concreteItems, this.formworkItems, this.rebarItems, this.steelItems, this.otherItems, this.specialItems].forEach(arr => {
+                                arr.forEach(item => { if(!item.refs) item.refs = []; });
+                            });
+                            this.assemblyItems.forEach(set => {
+                                if(!set.refs) set.refs = [];
+                                set.subItems.forEach(sub => { if(!sub.refs) sub.refs = []; });
+                            });
+
                             this.notify("โหลดข้อมูลโปรเจกต์สำเร็จ");
                         } catch (err) { this.notify("ไฟล์ข้อมูลไม่ถูกต้อง", "error"); }
                     };
@@ -892,7 +1211,7 @@
                     ws.columns = [
                         { key: 'no', width: 8 }, { key: 'desc', width: 45 }, { key: 'qty', width: 15 }, { key: 'unit', width: 10 },
                         { key: 'mat_up', width: 12 }, { key: 'mat_amt', width: 15 }, { key: 'lab_up', width: 12 }, { key: 'lab_amt', width: 15 },
-                        { key: 'total', width: 18 }, { key: 'remark', width: 25 }
+                        { key: 'total', width: 18 }, { key: 'remark', width: 35 }
                     ];
 
                     ws.mergeCells('A1:J1');
@@ -912,7 +1231,7 @@
                     ws.getCell('G3').value = 'ราคา/หน่วย'; ws.getCell('H3').value = 'จำนวนเงิน';
                     
                     ws.mergeCells('I2:I3'); ws.getCell('I2').value = 'รวมค่าวัสดุและแรงงาน';
-                    ws.mergeCells('J2:J3'); ws.getCell('J2').value = 'หมายเหตุ';
+                    ws.mergeCells('J2:J3'); ws.getCell('J2').value = 'หมายเหตุ / อ้างอิง';
 
                     ['A2','B2','C2','D2','E2','G2','I2','J2','E3','F3','G3','H3'].forEach(cell => {
                         const c = ws.getCell(cell);
@@ -925,7 +1244,7 @@
                     let mainCatIdx = 1;
                     const subtotalRows = [];
 
-                    const insertCategory = (catName, items, qtyFunc, defaultUnit, isSpecial = false) => {
+                    const insertCategory = (catName, items, qtyFunc, unitFunc, isSpecial = false) => {
                         if (!items || items.length === 0) return;
                         
                         const catRow = ws.addRow({ no: mainCatIdx + '.', desc: catName });
@@ -936,18 +1255,28 @@
                         items.forEach((item, index) => {
                             let descFull = item.name;
                             if (!isSpecial && (item.spec || item.size)) descFull += ` (${item.spec || item.size})`;
+                            
                             let remarkTxt = (!isSpecial && item.wastage > 0) ? `เผื่อ ${item.wastage}%` : '';
+                            if (item.refs && item.refs.length > 0) {
+                                const refStrs = item.refs.map((r, idx) => r.text ? `${idx+1}. ${r.text}` : null).filter(Boolean);
+                                if (refStrs.length > 0) {
+                                    const refJoined = refStrs.join('\n');
+                                    remarkTxt = remarkTxt ? `${remarkTxt}\nอ้างอิง:\n${refJoined}` : `อ้างอิง:\n${refJoined}`;
+                                }
+                            }
 
-                            // Determine Qty - Value or Formula string
-                            let formulaOrVal = isSpecial ? Number(item.qty || 0) : qtyFunc(item, true);
+                            // Determine Qty & Unit dynamically
+                            let formulaOrVal = isSpecial ? Number(item.qty || 0) : qtyFunc(item);
                             let qtyCellContent = (typeof formulaOrVal === 'string' && formulaOrVal.startsWith('=')) 
                                 ? { formula: formulaOrVal.substring(1) } : formulaOrVal;
+                                
+                            let unitStr = isSpecial ? item.unit : (unitFunc ? unitFunc(item) : (item.spec || 'หน่วย'));
 
                             ws.addRow({
                                 no: `${mainCatIdx}.${index + 1}`,
                                 desc: '  ' + descFull,
                                 qty: qtyCellContent,
-                                unit: (isSpecial ? item.unit : defaultUnit) || item.spec || 'หน่วย',
+                                unit: unitStr,
                                 mat_up: Number(item.matPrice) || 0,
                                 mat_amt: { formula: `C${currentRow}*E${currentRow}` }, 
                                 lab_up: Number(item.labPrice) || 0,
@@ -976,12 +1305,77 @@
                         mainCatIdx++;
                     };
 
-                    insertCategory('1. งานดิน และวัสดุอื่นๆ', this.otherItems, this.calcOthQty, null);
-                    insertCategory('2. งานคอนกรีตโครงสร้าง', this.concreteItems, this.calcVol, 'ลบ.ม.');
-                    insertCategory('3. งานไม้แบบหล่อคอนกรีต', this.formworkItems, this.calcArea, 'ตร.ม.');
-                    insertCategory('4. งานเหล็กเสริมคอนกรีต', this.rebarItems, this.calcRebarWt, 'กก.');
-                    insertCategory('5. งานเหล็กรูปพรรณ', this.steelItems, this.calcSteelWt, 'กก.');
+                    const insertAssemblyCategory = () => {
+                        if (!this.assemblyItems || this.assemblyItems.length === 0) return;
+                        const catRow = ws.addRow({ no: mainCatIdx + '.', desc: '7. งานชุดประกอบ (Assembly Sets)' });
+                        catRow.font = { name: 'Sarabun', bold: true, color: { argb: 'FF1E40AF' } };
+                        const startDataRow = currentRow + 1;
+                        currentRow++;
+
+                        this.assemblyItems.forEach((set, sIdx) => {
+                            let setRemarkTxt = '';
+                            if (set.refs && set.refs.length > 0) {
+                                const refStrs = set.refs.map((r, idx) => r.text ? `${idx+1}. ${r.text}` : null).filter(Boolean);
+                                if (refStrs.length > 0) {
+                                    setRemarkTxt = `อ้างอิง:\n${refStrs.join('\n')}`;
+                                }
+                            }
+                            // Parent Set Row
+                            const setRow = ws.addRow({
+                                no: `${mainCatIdx}.${sIdx + 1}`, desc: '  ' + set.name, qty: set.setQty, unit: 'ชุด', remark: setRemarkTxt
+                            });
+                            setRow.font = { name: 'Sarabun', bold: true, italic: true };
+                            const setQtyCell = `C${currentRow}`;
+                            currentRow++;
+
+                            // Sub Items
+                            set.subItems.forEach((sub, subIdx) => {
+                                let subRemarkTxt = `(ปริมาณ ${sub.qtyPerSet} ${sub.unit}/ชุด)`;
+                                if (sub.refs && sub.refs.length > 0) {
+                                    const refStrs = sub.refs.map((r, idx) => r.text ? `${idx+1}. ${r.text}` : null).filter(Boolean);
+                                    if (refStrs.length > 0) {
+                                        subRemarkTxt += `\nอ้างอิง:\n${refStrs.join('\n')}`;
+                                    }
+                                }
+
+                                ws.addRow({
+                                    no: '', desc: '    - ' + sub.name,
+                                    qty: { formula: `${setQtyCell}*${sub.qtyPerSet}` }, unit: sub.unit,
+                                    mat_up: Number(sub.matPrice) || 0, mat_amt: { formula: `C${currentRow}*E${currentRow}` }, 
+                                    lab_up: Number(sub.labPrice) || 0, lab_amt: { formula: `C${currentRow}*G${currentRow}` }, 
+                                    total: { formula: `F${currentRow}+H${currentRow}` },   
+                                    remark: subRemarkTxt
+                                });
+                                ws.getRow(currentRow).font = { name: 'Sarabun' };
+                                currentRow++;
+                            });
+                        });
+
+                        const endDataRow = currentRow - 1;
+                        const subRow = ws.addRow({
+                            desc: `รวมหมวดงานชุดประกอบ`,
+                            mat_amt: { formula: `SUM(F${startDataRow}:F${endDataRow})` },
+                            lab_amt: { formula: `SUM(H${startDataRow}:H${endDataRow})` },
+                            total: { formula: `SUM(I${startDataRow}:I${endDataRow})` }
+                        });
+                        subRow.font = { name: 'Sarabun', bold: true };
+                        subRow.getCell('desc').alignment = { horizontal: 'right' };
+                        subRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+                        subtotalRows.push(currentRow);
+                        currentRow++;
+                        mainCatIdx++;
+                    }
+
+                    insertCategory('1. งานดิน และวัสดุอื่นๆ', this.otherItems, i => this.calcOthQty(i, true), () => null);
+                    insertCategory('2. งานคอนกรีตโครงสร้าง', this.concreteItems, i => this.calcVol(i, true), () => 'ลบ.ม.');
+                    insertCategory('3. งานไม้แบบหล่อคอนกรีต', this.formworkItems, i => this.calcArea(i, true), () => 'ตร.ม.');
+                    insertCategory('4. งานเหล็กเสริมคอนกรีต', this.rebarItems, i => this.calcRebarWt(i, true), () => 'กก.');
+                    insertCategory('5. งานเหล็กรูปพรรณ', this.steelItems, 
+                        i => i.priceUnit === 'piece' ? this.calcSteelPieces(i, true) : this.calcSteelWt(i, true), 
+                        i => i.priceUnit === 'piece' ? 'ท่อน' : 'กก.'
+                    );
                     insertCategory('6. งานค่าใช้จ่ายพิเศษ', this.specialItems, null, null, true);
+                    insertAssemblyCategory();
 
                     const grandRow = ws.addRow({
                         desc: 'รวมค่าก่อสร้างทั้งสิ้น (ยอดยกไป)',
@@ -999,7 +1393,12 @@
                             row.eachCell((cell, colNumber) => {
                                 cell.border = { top: { style: 'thin', color: { argb: 'FFCBD5E1' } }, left: { style: 'thin', color: { argb: 'FFCBD5E1' } }, bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } }, right: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
                                 if ([3, 5, 6, 7, 8, 9].includes(colNumber) && rowNumber > 3) cell.numFmt = '#,##0.00';
-                                if ([1, 4].includes(colNumber) && rowNumber > 3) cell.alignment = { horizontal: 'center' };
+                                if ([1, 4].includes(colNumber) && rowNumber > 3) cell.alignment = { horizontal: 'center', vertical: 'top' };
+                                
+                                // Wrap text for Description and Remark columns
+                                if ([2, 10].includes(colNumber) && rowNumber > 3) {
+                                    cell.alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
+                                }
                             });
                         }
                     });
